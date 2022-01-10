@@ -23,13 +23,31 @@ def get_data_BS():
 # функция сбора моделей телефона
 def parse_phone_models():
 
-    models = {
-        '8',
-        'x',
-    }
+    # инициализация работы браузера
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    driver = webdriver.Chrome(options=options)
+    # выбираем город Москва
+    driver.get('https://pedant.ru/?townid=1')
+    # переходим на страницу с прайсом определённой модели айфона
+    driver.get('https://pedant.ru/remont-apple/iphone/pr-razbilos-ili-potsarapolos-steklo?object=x')
+    # парсинг страницы
+    pageSource = driver.page_source
+    bsObjModels = BeautifulSoup(pageSource, 'lxml')
+
+    models_items = bsObjModels.find_all('ul', class_='hide-unactive-items-mobile')[1]
+
+    models = []
+
+    for model in models_items:
+        models.append(
+            model.text.replace(' ', '').casefold().strip().replace('iphone', '')
+        )
+
+    for model in models:
+        print(model)
 
     return models
-
 
 # фукция парсинга прайса со страницы определённой модели айфона
 def parse_price():
@@ -51,8 +69,8 @@ def parse_price():
         driver.get('https://pedant.ru/remont-apple/iphone/pr-razbilos-ili-potsarapolos-steklo?object=' + model)
         # парсинг страницы
         pageSource = driver.page_source
-        bsObj = BeautifulSoup(pageSource, 'lxml')
-        table = bsObj.find('div', class_='tab-content').find('tbody')
+        bsObjPrice = BeautifulSoup(pageSource, 'lxml')
+        table = bsObjPrice.find('div', class_='tab-content').find('tbody')
 
         for row in table.find_all('tr'):
             cols = row.find_all('td')
@@ -61,7 +79,7 @@ def parse_price():
                     '\n                    \nNEW', '').strip(),
                 'gadjet': cols[1].text.strip(),
                 'fix_time': cols[2].text.strip(),
-                'price_key': int(cols[3].text.replace(' акция до 10 января', '').replace('р.', '').replace(' ','')
+                'price_key': int(cols[3].text.replace(' акция до 17 января', '').replace('р.', '').replace(' ','')
                                  .replace('от', '').replace('Бесплатно', '0').replace('Звоните,пишите.Скажемценуза'
                                                                                       '3мин.', '0').strip())/2,
                 })
@@ -71,6 +89,7 @@ def parse_price():
 
 def main():
     parse_price()
+    # parse_phone_models()
 
 if __name__ == '__main__':
     main()
